@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grade 8 English Practice & Adaptive System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Rubik', sans-serif; background-color: #f8fafc; }
+    .en-font { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div id="app"></div>
+
+  <script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-GQQ72SsjwXVhAVPiEeve67Vf0P_cKLIVFH1OuIttsA58LlOe8FL0DE7FNVfwMRz9SA/exec";
+
+    const VOCABULARY_DATA = [
+      { id: "v1", word: "age", translation: "גיל", level: 1, topic: "vocab_l1" },
+      { id: "v2", word: "buy", translation: "לקנות", level: 1, topic: "vocab_l1" },
+      { id: "v3", word: "cheese", translation: "גבינה", level: 1, topic: "vocab_l1" },
+      { id: "v4", word: "children", translation: "ילדים", level: 1, topic: "vocab_l1" },
+      { id: "v5", word: "clothes", translation: "בגדים", level: 1, topic: "vocab_l1" },
+      { id: "v6", word: "country", translation: "מדינה", level: 1, topic: "vocab_l1" },
+      { id: "v7", word: "market", translation: "שוק", level: 1, topic: "vocab_l1" },
+      { id: "v8", word: "hungry", translation: "רעב", level: 1, topic: "vocab_l1" },
+      { id: "v9", word: "problem", translation: "בעיה", level: 1, topic: "vocab_l1" },
+      { id: "v10", word: "ready", translation: "מוכן", level: 1, topic: "vocab_l1" },
+      { id: "v11", word: "delicious", translation: "טעים", level: 2, topic: "vocab_l2" },
+      { id: "v12", word: "factory", translation: "מפעל", level: 2, topic: "vocab_l2" },
+      { id: "v13", word: "available", translation: "זמין", level: 2, topic: "vocab_l2" },
+      { id: "v14", word: "celebrated", translation: "חגג", level: 2, topic: "vocab_l2" },
+      { id: "v15", word: "desert", translation: "מדבר", level: 2, topic: "vocab_l2" },
+      { id: "v16", word: "capital", translation: "עיר בירה", level: 2, topic: "vocab_l2" },
+      { id: "v17", word: "century", translation: "מאה (100 שנה)", level: 2, topic: "vocab_l2" },
+      { id: "v18", word: "calendar", translation: "לוח שנה", level: 2, topic: "vocab_l2" },
+      { id: "v19", word: "expense", translation: "הוצאה כספית", level: 3, topic: "vocab_l3" },
+      { id: "v20", word: "admire", translation: "להעריץ", level: 3, topic: "vocab_l3" },
+      { id: "v21", word: "discount", translation: "הנחה", level: 3, topic: "vocab_l3" },
+      { id: "v22", word: "dedicated", translation: "הקדיש", level: 3, topic: "vocab_l3" },
+      { id: "v23", word: "speeches", translation: "נאומים", level: 3, topic: "vocab_l3" },
+      { id: "v24", word: "competition", translation: "תחרות", level: 3, topic: "vocab_l3" }
+    ];
+
+    const GRAMMAR_DATA = [
+      { id: "g1", sentence: "I ___ (know) the answer right now.", options: ["know", "am knowing", "knows"], correct: "know", rule: "Stative verb 'know' אינו מופיע ב-Progressive", topic: "Present Simple" },
+      { id: "g2", sentence: "She ___ (wear) a new jacket today.", options: ["wears", "is wearing", "wear"], correct: "is wearing", rule: "פעולה זמנית שקורית היום - Present Progressive", topic: "Present Progressive" },
+      { id: "g3", sentence: "They ___ (play) football every weekend.", options: ["play", "are playing", "plays"], correct: "play", rule: "הרגל קבוע - Present Simple", topic: "Present Simple" },
+      { id: "g4", sentence: "The soup ___ (taste) delicious!", options: ["tastes", "is tasting", "taste"], correct: "tastes", rule: "Stative verb המתאר תכונה - Present Simple", topic: "Stative Verbs" },
+      { id: "g5", sentence: "Be quiet! I ___ (think) about the answer.", options: ["think", "am thinking", "thinks"], correct: "am thinking", rule: "פעולת מחשבה אקטיבית המתרחשת כרגע", topic: "Present Progressive" },
+      { id: "g6", sentence: "My dad ___ (work) from home this week.", options: ["works", "is working", "work"], correct: "is working", rule: "מצב זמני השבוע - Present Progressive", topic: "Present Progressive" },
+      { id: "g7", sentence: "Where ___ they live?", options: ["do", "does", "are"], correct: "do", rule: "שאלה ב-Present Simple עבור They", topic: "Present Simple Questions" }
+    ];
+
+    let state = {
+      studentName: localStorage.getItem("g8_student_name") || "",
+      isLoggedIn: !!localStorage.getItem("g8_student_name"),
+      activeTab: "practice",
+      stats: JSON.parse(localStorage.getItem("g8_user_stats")) || { practiceCount: 0, weakTopics: {}, history: [] },
+      questions: [],
+      userAnswers: {},
+      submitted: false,
+      score: 0
+    };
+
+    function saveStats() {
+      localStorage.setItem("g8_user_stats", JSON.stringify(state.stats));
+    }
+
+    function generateQuestions() {
+      state.submitted = false;
+      state.userAnswers = {};
+
+      const pool = [
+        ...VOCABULARY_DATA.map(v => ({
+          id: v.id,
+          type: "vocab",
+          topic: v.topic,
+          question: `מה הפירוש של המילה "${v.word}"?`,
+          options: [v.translation, "תחרות", "עיר בירה", "בגדים"].sort(() => Math.random() - 0.5),
+          correct: v.translation
+        })),
+        ...GRAMMAR_DATA.map(g => ({
+          id: g.id,
+          type: "grammar",
+          topic: g.topic,
+          question: g.sentence,
+          options: g.options,
+          correct: g.correct,
+          rule: g.rule
+        }))
+      ];
+
+      const weightedPool = [];
+      pool.forEach(item => {
+        const weight = (state.stats.weakTopics[item.topic] || 0) + 1;
+        for (let i = 0; i < weight; i++) {
+          weightedPool.push(item);
+        }
+      });
+
+      const shuffled = weightedPool.sort(() => Math.random() - 0.5);
+      const selected = [];
+      const seen = new Set();
+      for (let item of shuffled) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          selected.push(item);
+        }
+        if (selected.length >= 5) break;
+      }
+
+      state.questions = selected;
+    }
+
+    function speakWord(word) {
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(word);
+        u.lang = 'en-US';
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    function render() {
+      const appContainer = document.getElementById("app");
+      
+      if (!state.isLoggedIn) {
+        appContainer.innerHTML = `
+          <div class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
+            <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 text-center">
+              <div class="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-4">E8</div>
+              <h1 class="text-2xl font-bold text-slate-800 mb-2">מערכת תרגול אדפטיבית - אנגלית ח'</h1>
+              <p class="text-slate-500 mb-6 text-sm">הזן את שמך להתחלת תרגול ושמירת ההתקדמות</p>
+              
+              <form id="loginForm" class="space-y-4">
+                <input
+                  type="text"
+                  id="nameInput"
+                  required
+                  placeholder="שם מלא של התלמיד/ה"
+                  value="${state.studentName}"
+                  class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-right"
+                />
+                <button
+                  type="submit"
+                  class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition"
+                >
+                  התחל תרגול 🚀
+                </button>
+              </form>
+            </div>
+          </div>
+        `;
+
+        document.getElementById("loginForm").onsubmit = (e) => {
+          e.preventDefault();
+          const name = document.getElementById("nameInput").value.trim();
+          if (name) {
+            state.studentName = name;
+            state.isLoggedIn = true;
+            localStorage.setItem("g8_student_name", name);
+            generateQuestions();
+            render();
+          }
+        };
+        return;
+      }
+
+      let mainContent = '';
+
+      if (state.activeTab === "practice") {
+        mainContent = `
+          <div class="space-y-6">
+            <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 class="font-bold text-blue-900">מחולל תרגולים אדפטיבי חכם</h2>
+                <p class="text-xs text-blue-700">השאלות מתחלפות בכל תרגול ומחזקות נושאים שבהם טעית בעבר!</p>
+              </div>
+              <button id="btnShuffle" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                🎲 ערבב שאלות חדשות
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              ${state.questions.map((q, idx) => {
+                const isWeak = (state.stats.weakTopics[q.topic] || 0) > 0;
+                return `
+                  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                      <span class="text-xs font-bold px-2.5 py-1 rounded bg-slate-100 text-slate-600">
+                        שאלה ${idx + 1} (${q.type === 'vocab' ? 'אוצר מילים' : 'דקדוק'})
+                      </span>
+                      ${isWeak ? '<span class="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">⚡ נושא מומלץ לחיזוק</span>' : ''}
+                    </div>
+
+                    <p class="font-semibold text-lg text-slate-800 mb-4 en-font" dir="ltr">${q.question}</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      ${q.options.map(opt => {
+                        const isSelected = state.userAnswers[q.id] === opt;
+                        let btnStyle = "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700";
+
+                        if (state.submitted) {
+                          if (opt === q.correct) btnStyle = "bg-emerald-100 border-emerald-400 text-emerald-800 font-bold";
+                          else if (isSelected && opt !== q.correct) btnStyle = "bg-rose-100 border-rose-400 text-rose-800";
+                        } else if (isSelected) {
+                          btnStyle = "bg-blue-50 border-blue-500 text-blue-800 font-bold";
+                        }
+
+                        return `
+                          <button
+                            onclick="selectOption('${q.id}', '${opt}')"
+                            class="p-3 rounded-lg border text-right transition en-font ${btnStyle}"
+                          >
+                            ${opt}
+                          </button>
+                        `;
+                      }).join('')}
+                    </div>
+
+                    ${state.submitted && q.rule ? `
+                      <div class="mt-3 text-xs bg-slate-50 p-2.5 rounded border border-slate-200 text-slate-600">
+                        💡 <strong>כלל דקדוקי:</strong> ${q.rule}
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            ${!state.submitted ? `
+              <button
+                id="btnSubmit"
+                ${Object.keys(state.userAnswers).length < state.questions.length ? 'disabled' : ''}
+                class="w-full bg-emerald-600 disabled:bg-slate-300 text-white font-bold py-3 rounded-xl shadow transition"
+              >
+                בדוק תשובות ושמור התקדמות ✅
+              </button>
+            ` : `
+              <div class="bg-white p-6 rounded-xl border border-slate-200 text-center space-y-3 shadow-sm">
+                <h3 class="text-2xl font-bold text-slate-800">ציון בתרגול זה: ${state.score}%</h3>
+                <p class="text-slate-600 text-sm">התרגול והתוצאות עודכנו במערכת ובגיליון גוגל שיטס!</p>
+                <button id="btnNewPractice" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition">
+                  התחל תרגול נוסף 🔄
+                </button>
+              </div>
+            `}
+          </div>
+        `;
+      } else if (state.activeTab === "vocab") {
+        mainContent = `
+          <div class="space-y-4">
+            <h2 class="text-xl font-bold text-slate-800">מילון מונחים אינטראקטיבי - לחץ להקראה 🔊</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              ${VOCABULARY_DATA.map(item => `
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-slate-800 text-lg en-font">${item.word}</span>
+                      <button onclick="speakWord('${item.word}')" class="text-blue-600 hover:text-blue-800">🔊</button>
+                    </div>
+                    <span class="text-xs text-slate-500">רמה ${item.level}</span>
+                  </div>
+                  <span class="font-semibold text-slate-700">${item.translation}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else if (state.activeTab === "stats") {
+        const weakList = Object.entries(state.stats.weakTopics).filter(([_, v]) => v > 0);
+        mainContent = `
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+            <h2 class="text-xl font-bold text-slate-800">דוח התקדמות עבור ${state.studentName}</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <h3 class="font-bold text-slate-700 mb-2">נושאים המומלצים לחיזוק אישי (Adaptive)</h3>
+                ${weakList.length === 0 ? '<p class="text-sm text-emerald-600">אין כרגע נושאים חלשים. עבודה מעולה! 🎉</p>' : `
+                  <ul class="space-y-1 text-sm text-amber-800">
+                    ${weakList.map(([t, v]) => `
+                      <li class="flex justify-between border-b border-amber-100 py-1">
+                        <span>${t}</span>
+                        <span class="font-bold">דרגת חיזוק: ${v}</span>
+                      </li>
+                    `).join('')}
+                  </ul>
+                `}
+              </div>
+
+              <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <h3 class="font-bold text-slate-700 mb-2">היסטוריית תרגולים</h3>
+                ${state.stats.history.length === 0 ? '<p class="text-sm text-slate-400">טרם בוצעו תרגולים</p>' : `
+                  <div class="space-y-1 text-sm max-h-40 overflow-y-auto">
+                    ${state.stats.history.slice(-5).reverse().map(h => `
+                      <div class="flex justify-between border-b border-slate-200 py-1">
+                        <span>${h.date}</span>
+                        <span class="font-bold text-blue-600">${h.score}%</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      appContainer.innerHTML = `
+        <div class="min-h-screen flex flex-col">
+          <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+            <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="w-10 h-10 bg-blue-600 text-white font-bold flex items-center justify-center rounded-xl text-lg">E8</span>
+                <div>
+                  <h1 class="font-bold text-slate-800 leading-none">English Grade 8</h1>
+                  <span class="text-xs text-slate-500">שלום, ${state.studentName}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-4 text-xs font-semibold">
+                <div class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200">
+                  🔄 סך תרגולים: <span class="text-base font-bold">${state.stats.practiceCount}</span>
+                </div>
+                <button id="btnLogout" class="text-slate-400 hover:text-rose-600 text-xs">החלף תלמיד</button>
+              </div>
+            </div>
+
+            <div class="max-w-5xl mx-auto px-4 flex gap-2 border-t border-slate-100 pt-2">
+              <button onclick="switchTab('practice')" class="px-4 py-2 text-sm font-semibold rounded-t-lg ${state.activeTab === "practice" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
+                🎯 תרגול אדפטיבי
+              </button>
+              <button onclick="switchTab('vocab')" class="px-4 py-2 text-sm font-semibold rounded-t-lg ${state.activeTab === "vocab" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
+                📚 מילון ואודיו
+              </button>
+              <button onclick="switchTab('stats')" class="px-4 py-2 text-sm font-semibold rounded-t-lg ${state.activeTab === "stats" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
+                📊 דוח התקדמות
+              </button>
+            </div>
+          </header>
+
+          <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
+            ${mainContent}
+          </main>
+        </div>
+      `;
+
+      const logoutBtn = document.getElementById("btnLogout");
+      if (logoutBtn) {
+        logoutBtn.onclick = () => {
+          localStorage.removeItem("g8_student_name");
+          state.isLoggedIn = false;
+          render();
+        };
+      }
+
+      const shuffleBtn = document.getElementById("btnShuffle");
+      if (shuffleBtn) {
+        shuffleBtn.onclick = () => {
+          generateQuestions();
+          render();
+        };
+      }
+
+      const submitBtn = document.getElementById("btnSubmit");
+      if (submitBtn) {
+        submitBtn.onclick = () => {
+          let correctCount = 0;
+          const newWeakTopics = { ...state.stats.weakTopics };
+
+          state.questions.forEach(q => {
+            if (state.userAnswers[q.id] === q.correct) {
+              correctCount++;
+              if (newWeakTopics[q.topic] && newWeakTopics[q.topic] > 0) {
+                newWeakTopics[q.topic] -= 1;
+              }
+            } else {
+              newWeakTopics[q.topic] = (newWeakTopics[q.topic] || 0) + 2;
+            }
+          });
+
+          state.score = Math.round((correctCount / state.questions.length) * 100);
+          state.submitted = true;
+
+          state.stats.practiceCount += 1;
+          state.stats.weakTopics = newWeakTopics;
+          state.stats.history.push({
+            date: new Date().toLocaleDateString('he-IL'),
+            score: state.score
+          });
+
+          saveStats();
+
+          if (GOOGLE_SCRIPT_URL) {
+            fetch(GOOGLE_SCRIPT_URL, {
+              method: "POST",
+              mode: "no-cors",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "logPractice",
+                studentName: state.studentName,
+                score: state.score,
+                weakTopics: Object.keys(newWeakTopics).filter(t => newWeakTopics[t] > 0).join(", ")
+              })
+            }).catch(e => console.error(e));
+          }
+
+          render();
+        };
+      }
+
+      const newPracticeBtn = document.getElementById("btnNewPractice");
+      if (newPracticeBtn) {
+        newPracticeBtn.onclick = () => {
+          generateQuestions();
+          render();
+        };
+      }
+    }
+
+    window.selectOption = function(qId, option) {
+      if (state.submitted) return;
+      state.userAnswers[qId] = option;
+      render();
+    };
+
+    window.switchTab = function(tab) {
+      state.activeTab = tab;
+      render();
+    };
+
+    if (state.isLoggedIn) generateQuestions();
+    render();
+  </script>
+</body>
+</html>
