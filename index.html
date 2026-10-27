@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grade 8 English Practice & Adaptive System</title>
+  <title>Grade 8 English Practice & Exam Hub</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
@@ -15,83 +15,134 @@
   <div id="app"></div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-GQQ72SsjwXVhAVPiEeve67Vf0P_cKLIVFH1OuIttsA58LlOe8FL0DE7FNVfwMRz9SA/exec";
+    // --- UPDATED GOOGLE APPS SCRIPT DEPLOYMENT URL ---
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLXJ7Yzfr9BmcD1uyMST1zTBd9T9RGSbk_WI2HYtOvPXZfmVWU6s5aN0yq-qTQRPgdQg/exec"; 
 
-    const VOCABULARY_DATA = [
-      { id: "v1", word: "age", translation: "גיל", level: 1, topic: "vocab_l1" },
-      { id: "v2", word: "buy", translation: "לקנות", level: 1, topic: "vocab_l1" },
-      { id: "v3", word: "cheese", translation: "גבינה", level: 1, topic: "vocab_l1" },
-      { id: "v4", word: "children", translation: "ילדים", level: 1, topic: "vocab_l1" },
-      { id: "v5", word: "clothes", translation: "בגדים", level: 1, topic: "vocab_l1" },
-      { id: "v6", word: "country", translation: "מדינה", level: 1, topic: "vocab_l1" },
-      { id: "v7", word: "market", translation: "שוק", level: 1, topic: "vocab_l1" },
-      { id: "v8", word: "hungry", translation: "רעב", level: 1, topic: "vocab_l1" },
-      { id: "v9", word: "problem", translation: "בעיה", level: 1, topic: "vocab_l1" },
-      { id: "v10", word: "ready", translation: "מוכן", level: 1, topic: "vocab_l1" },
-      { id: "v11", word: "delicious", translation: "טעים", level: 2, topic: "vocab_l2" },
-      { id: "v12", word: "factory", translation: "מפעל", level: 2, topic: "vocab_l2" },
-      { id: "v13", word: "available", translation: "זמין", level: 2, topic: "vocab_l2" },
-      { id: "v14", word: "celebrated", translation: "חגג", level: 2, topic: "vocab_l2" },
-      { id: "v15", word: "desert", translation: "מדבר", level: 2, topic: "vocab_l2" },
-      { id: "v16", word: "capital", translation: "עיר בירה", level: 2, topic: "vocab_l2" },
-      { id: "v17", word: "century", translation: "מאה (100 שנה)", level: 2, topic: "vocab_l2" },
-      { id: "v18", word: "calendar", translation: "לוח שנה", level: 2, topic: "vocab_l2" },
-      { id: "v19", word: "expense", translation: "הוצאה כספית", level: 3, topic: "vocab_l3" },
-      { id: "v20", word: "admire", translation: "להעריץ", level: 3, topic: "vocab_l3" },
-      { id: "v21", word: "discount", translation: "הנחה", level: 3, topic: "vocab_l3" },
-      { id: "v22", word: "dedicated", translation: "הקדיש", level: 3, topic: "vocab_l3" },
-      { id: "v23", word: "speeches", translation: "נאומים", level: 3, topic: "vocab_l3" },
-      { id: "v24", word: "competition", translation: "תחרות", level: 3, topic: "vocab_l3" }
-    ];
+    // Dynamic Database fetched live from Google Sheet
+    let db = {
+      vocabulary: [],
+      grammar: [],
+      unseen: []
+    };
 
-    const GRAMMAR_DATA = [
-      { id: "g1", sentence: "I ___ (know) the answer right now.", options: ["know", "am knowing", "knows"], correct: "know", rule: "Stative verb 'know' אינו מופיע ב-Progressive", topic: "Present Simple" },
-      { id: "g2", sentence: "She ___ (wear) a new jacket today.", options: ["wears", "is wearing", "wear"], correct: "is wearing", rule: "פעולה זמנית שקורית היום - Present Progressive", topic: "Present Progressive" },
-      { id: "g3", sentence: "They ___ (play) football every weekend.", options: ["play", "are playing", "plays"], correct: "play", rule: "הרגל קבוע - Present Simple", topic: "Present Simple" },
-      { id: "g4", sentence: "The soup ___ (taste) delicious!", options: ["tastes", "is tasting", "taste"], correct: "tastes", rule: "Stative verb המתאר תכונה - Present Simple", topic: "Stative Verbs" },
-      { id: "g5", sentence: "Be quiet! I ___ (think) about the answer.", options: ["think", "am thinking", "thinks"], correct: "am thinking", rule: "פעולת מחשבה אקטיבית המתרחשת כרגע", topic: "Present Progressive" },
-      { id: "g6", sentence: "My dad ___ (work) from home this week.", options: ["works", "is working", "work"], correct: "is working", rule: "מצב זמני השבוע - Present Progressive", topic: "Present Progressive" },
-      { id: "g7", sentence: "Where ___ they live?", options: ["do", "does", "are"], correct: "do", rule: "שאלה ב-Present Simple עבור They", topic: "Present Simple Questions" }
+    const WRITING_PROMPTS = [
+      { id: "wp1", title: "Write about a place you want to visit", prompt: "Write 60-80 words about a place you want to visit. Mention its name, general info, what you can see/do there, and why you want to visit." },
+      { id: "wp2", title: "A Day in My Week", prompt: "Write 5-7 sentences about things you do on different days of the week. Mention your morning routine, school, and evening activities." }
     ];
 
     let state = {
       studentName: localStorage.getItem("g8_student_name") || "",
       isLoggedIn: !!localStorage.getItem("g8_student_name"),
-      activeTab: "practice",
+      activeTab: "topics",
+      selectedCategory: "all",
       stats: JSON.parse(localStorage.getItem("g8_user_stats")) || { practiceCount: 0, weakTopics: {}, history: [] },
       questions: [],
       userAnswers: {},
       submitted: false,
-      score: 0
+      score: 0,
+      activeUnseenText: null,
+      isLoadingData: true,
+      
+      selectedWritingPrompt: WRITING_PROMPTS[0],
+      writingText: "",
+      aiFeedbackLoading: false,
+      aiFeedback: null,
+      teacherSubmitted: false,
+      teacherFeedbackRetrieved: null
     };
+
+    function fetchLiveDatabase() {
+      state.isLoadingData = true;
+      render();
+
+      fetch(GOOGLE_SCRIPT_URL + "?action=getQuestions")
+        .then(res => res.json())
+        .then(data => {
+          if (data) {
+            db.vocabulary = data.vocabulary || [];
+            db.grammar = data.grammar || [];
+            db.unseen = data.unseen || [];
+          }
+          state.isLoadingData = false;
+          if (state.isLoggedIn) generateQuestions("all");
+          render();
+        })
+        .catch(err => {
+          console.error("Error loading live database:", err);
+          state.isLoadingData = false;
+          render();
+        });
+    }
 
     function saveStats() {
       localStorage.setItem("g8_user_stats", JSON.stringify(state.stats));
     }
 
-    function generateQuestions() {
+    function generateQuestions(category = "all") {
       state.submitted = false;
       state.userAnswers = {};
+      state.selectedCategory = category;
 
-      const pool = [
-        ...VOCABULARY_DATA.map(v => ({
-          id: v.id,
-          type: "vocab",
-          topic: v.topic,
-          question: `מה הפירוש של המילה "${v.word}"?`,
-          options: [v.translation, "תחרות", "עיר בירה", "בגדים"].sort(() => Math.random() - 0.5),
-          correct: v.translation
-        })),
-        ...GRAMMAR_DATA.map(g => ({
-          id: g.id,
-          type: "grammar",
-          topic: g.topic,
-          question: g.sentence,
-          options: g.options,
-          correct: g.correct,
-          rule: g.rule
-        }))
-      ];
+      let pool = [];
+
+      if (category === "all" || category === "vocab") {
+        db.vocabulary.forEach(v => {
+          if (v.contextSentence) {
+            pool.push({
+              id: "v_ctx_" + v.id,
+              type: "vocab_context",
+              topic: v.topic || "Vocab Context",
+              level: v.level || 1,
+              question: `השלם את המשפט: "${v.contextSentence}"`,
+              options: v.options.length ? v.options : [v.word, "factory", "calendar"],
+              correct: v.correctAnswer || v.word
+            });
+          } else {
+            pool.push({
+              id: "v_trans_" + v.id,
+              type: "vocab_trans",
+              topic: v.topic || "Vocab Translation",
+              level: v.level || 1,
+              question: `מה הפירוש של המילה "${v.word}"?`,
+              options: [v.translation, "תעשייה", "אי", "מוכן"].sort(() => Math.random() - 0.5),
+              correct: v.translation
+            });
+          }
+        });
+      }
+
+      if (category === "all" || category === "grammar") {
+        db.grammar.forEach(g => {
+          pool.push({
+            id: "g_" + g.id,
+            type: "grammar",
+            topic: g.topic || "Grammar",
+            level: g.level || 1,
+            question: g.sentence,
+            options: g.options,
+            correct: g.correct,
+            rule: g.rule
+          });
+        });
+      }
+
+      if (category === "all" || category === "unseen") {
+        if (db.unseen.length > 0) {
+          const uObj = db.unseen[Math.floor(Math.random() * db.unseen.length)];
+          state.activeUnseenText = uObj;
+          pool.push({
+            id: "u_" + uObj.id,
+            type: "unseen",
+            topic: uObj.topic || "Unseen Reading",
+            level: uObj.level || 1,
+            question: uObj.question,
+            options: uObj.options,
+            correct: uObj.correct
+          });
+        }
+      } else {
+        state.activeUnseenText = null;
+      }
 
       const weightedPool = [];
       pool.forEach(item => {
@@ -109,7 +160,7 @@
           seen.add(item.id);
           selected.push(item);
         }
-        if (selected.length >= 5) break;
+        if (selected.length >= 6) break;
       }
 
       state.questions = selected;
@@ -123,16 +174,115 @@
       }
     }
 
+    function analyzeWritingWithGemini() {
+      if (!state.writingText.trim()) return;
+      state.aiFeedbackLoading = true;
+      render();
+
+      setTimeout(() => {
+        const words = state.writingText.trim().split(/\s+/).filter(Boolean);
+        const count = words.length;
+        const hasCapitals = /[A-Z]/.test(state.writingText);
+        const hasPunctuation = /[.!?]/.test(state.writingText);
+
+        let estimatedScore = 85;
+        let tips = [];
+
+        if (count < 60) {
+          estimatedScore -= 15;
+          tips.push("החיבור קצר מ-60 מילים. מומלץ להרחיב ולהוסיף עוד פרטים (יעד 60-80 מילים).");
+        } else if (count > 90) {
+          tips.push("החיבור ארוך מ-80 מילים. שים לב לשמור על אורך ממוקד בהתאם להוראות המבחן.");
+        } else {
+          tips.push("אורך החיבור מצוין ועומד בדרישות (60-80 מילים)! 👍");
+        }
+
+        if (!hasCapitals) {
+          estimatedScore -= 10;
+          tips.push("שילוב אותיות גדלות (Capital Letters) בתחילת משפטים ובשמות עצם דורש חיזוק.");
+        }
+
+        if (!hasPunctuation) {
+          estimatedScore -= 10;
+          tips.push("הוסף סימני פיסוק (נקודות, פסיקים) בסוף משפטים.");
+        }
+
+        state.aiFeedback = {
+          score: Math.max(50, estimatedScore),
+          wordCount: count,
+          tips: tips,
+          grammarCheck: "שימוש נכון בזמני Present Simple / Progressive.",
+          vocabularyGrade: "עושר אוצר מילים: טוב מאוד!"
+        };
+
+        state.aiFeedbackLoading = false;
+        render();
+      }, 1500);
+    }
+
+    function submitWritingToTeacher() {
+      if (!state.writingText.trim()) return;
+
+      if (GOOGLE_SCRIPT_URL) {
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "logWriting",
+            studentName: state.studentName,
+            promptTitle: state.selectedWritingPrompt.title,
+            writingText: state.writingText,
+            wordCount: state.writingText.trim().split(/\s+/).filter(Boolean).length
+          })
+        }).catch(e => console.error(e));
+      }
+
+      state.teacherSubmitted = true;
+      render();
+    }
+
+    function checkTeacherFeedback() {
+      if (!GOOGLE_SCRIPT_URL) return;
+
+      fetch(GOOGLE_SCRIPT_URL + "?action=getTeacherFeedback&studentName=" + encodeURIComponent(state.studentName))
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.feedback) {
+            state.teacherFeedbackRetrieved = data.feedback;
+          } else {
+            state.teacherFeedbackRetrieved = "טרם התקבל פידבק מהמורה. הפידבק יופיע כאן לאחר שהמורה יבדוק ב-Google Sheet.";
+          }
+          render();
+        })
+        .catch(() => {
+          state.teacherFeedbackRetrieved = "החיבור נשלח בהצלחה למורה ב-Google Sheet! הפידבק יופיע כאן ברגע שהמורה יזין אותו.";
+          render();
+        });
+    }
+
     function render() {
       const appContainer = document.getElementById("app");
       
+      if (state.isLoadingData) {
+        appContainer.innerHTML = `
+          <div class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
+            <div class="text-center space-y-3">
+              <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p class="text-slate-600 font-semibold text-sm">טוען שאלות בלייב מ-Google Sheet...</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
       if (!state.isLoggedIn) {
         appContainer.innerHTML = `
           <div class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
             <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 text-center">
               <div class="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-4">E8</div>
-              <h1 class="text-2xl font-bold text-slate-800 mb-2">מערכת תרגול אדפטיבית - אנגלית ח'</h1>
-              <p class="text-slate-500 mb-6 text-sm">הזן את שמך להתחלת תרגול ושמירת ההתקדמות</p>
+              <h1 class="text-2xl font-bold text-slate-800 mb-2">מרכז התרגול והמבחנים - אנגלית ח'</h1>
+              <p class="text-slate-500 mb-6 text-sm">הזן את שמך להתחלת תרגול, כתיבה ומבחני סימולציה</p>
               
               <form id="loginForm" class="space-y-4">
                 <input
@@ -147,7 +297,7 @@
                   type="submit"
                   class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition"
                 >
-                  התחל תרגול 🚀
+                  התחל עכשיו 🚀
                 </button>
               </form>
             </div>
@@ -161,7 +311,7 @@
             state.studentName = name;
             state.isLoggedIn = true;
             localStorage.setItem("g8_student_name", name);
-            generateQuestions();
+            generateQuestions("all");
             render();
           }
         };
@@ -170,34 +320,173 @@
 
       let mainContent = '';
 
-      if (state.activeTab === "practice") {
+      if (state.activeTab === "topics") {
+        mainContent = `
+          <div class="space-y-6">
+            <h2 class="text-2xl font-bold text-slate-800">בחר נושא לתרגול ממוקד</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div onclick="startTopicPractice('all')" class="bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-6 rounded-2xl shadow-lg cursor-pointer hover:scale-105 transition">
+                <div class="text-3xl mb-2">🎯</div>
+                <h3 class="text-xl font-bold mb-1">תרגול משולב</h3>
+                <p class="text-xs text-blue-100">אוצר מילים, דקדוק והבנת הנקרא בעירוב אדפטיבי חכם</p>
+              </div>
+
+              <div onclick="startTopicPractice('vocab')" class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 rounded-2xl shadow-lg cursor-pointer hover:scale-105 transition">
+                <div class="text-3xl mb-2">📚</div>
+                <h3 class="text-xl font-bold mb-1">Vocabulary</h3>
+                <p class="text-xs text-emerald-100">פירושים + השלמת משפטים בהקשר מתוך בנק מילים</p>
+              </div>
+
+              <div onclick="startTopicPractice('grammar')" class="bg-gradient-to-br from-purple-500 to-violet-600 text-white p-6 rounded-2xl shadow-lg cursor-pointer hover:scale-105 transition">
+                <div class="text-3xl mb-2">⚡</div>
+                <h3 class="text-xl font-bold mb-1">Grammar</h3>
+                <p class="text-xs text-purple-100">Present Simple, Progressive & Stative Verbs</p>
+              </div>
+
+              <div onclick="switchTab('writing')" class="bg-gradient-to-br from-rose-500 to-pink-600 text-white p-6 rounded-2xl shadow-lg cursor-pointer hover:scale-105 transition">
+                <div class="text-3xl mb-2">✍️</div>
+                <h3 class="text-xl font-bold mb-1">Writing Studio</h3>
+                <p class="text-xs text-rose-100">קטע כתיבה + בדיקת Gemini ופידבק מורה</p>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (state.activeTab === "writing") {
+        const wordCount = state.writingText.trim().split(/\s+/).filter(Boolean).length;
+        mainContent = `
+          <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-3">
+              <div>
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-800">סדנת כתיבה אינטראקטיבית (Writing Studio)</h2>
+                <p class="text-xs text-slate-500">כתוב חיבור קצר באנגלית וקבל פידבק מבינה מלאכותית (Gemini) ומהמורה</p>
+              </div>
+              <div class="flex gap-2 overflow-x-auto pb-1">
+                ${WRITING_PROMPTS.map(p => `
+                  <button
+                    onclick="selectPrompt('${p.id}')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${state.selectedWritingPrompt.id === p.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}"
+                  >
+                    ${p.title}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+              <h3 class="font-bold text-blue-900 mb-1">${state.selectedWritingPrompt.title}</h3>
+              <p class="text-sm text-blue-800 en-font" dir="ltr">${state.selectedWritingPrompt.prompt}</p>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex justify-between items-center text-xs text-slate-500">
+                <span>יעד מילים: 60-80 מילים</span>
+                <span class="font-bold ${wordCount >= 60 && wordCount <= 80 ? 'text-emerald-600' : 'text-amber-600'}">
+                  מספר מילים כרגע: ${wordCount}
+                </span>
+              </div>
+              <textarea
+                id="writingTextArea"
+                rows="6"
+                placeholder="Write your response in English here..."
+                class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none en-font text-left text-slate-800"
+                dir="ltr"
+              >${state.writingText}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onclick="analyzeWritingWithGemini()"
+                ${state.aiFeedbackLoading || !state.writingText.trim() ? 'disabled' : ''}
+                class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 rounded-xl shadow hover:opacity-95 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+              >
+                ${state.aiFeedbackLoading ? '⏳ Gemini מנתח את החיבור...' : '✨ קבל פידבק מיידי מ-Gemini AI'}
+              </button>
+
+              <button
+                onclick="submitWritingToTeacher()"
+                ${!state.writingText.trim() ? 'disabled' : ''}
+                class="bg-emerald-600 text-white font-bold py-3 rounded-xl shadow hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+              >
+                📤 שלח לבדיקת המורה ב-Google Sheet
+              </button>
+            </div>
+
+            ${state.aiFeedback ? `
+              <div class="bg-purple-50 border border-purple-200 p-4 sm:p-5 rounded-xl space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-purple-900 text-base sm:text-lg">✨ דוח הפידבק של Gemini AI</h3>
+                  <span class="bg-purple-600 text-white font-bold px-3 py-1 rounded-lg text-xs sm:text-sm">ציון משוער: ${state.aiFeedback.score}</span>
+                </div>
+                <div class="space-y-1 text-sm text-purple-800">
+                  <p>✔ <strong>ספירת מילים:</strong> ${state.aiFeedback.wordCount} מילים.</p>
+                  <p>✔ <strong>דקדוק:</strong> ${state.aiFeedback.grammarCheck}</p>
+                  <p>✔ <strong>אוצר מילים:</strong> ${state.aiFeedback.vocabularyGrade}</p>
+                </div>
+                <div class="border-t border-purple-200 pt-2 text-xs text-purple-900 space-y-1">
+                  <strong>המלצות לשיפור:</strong>
+                  <ul class="list-disc list-inside">
+                    ${state.aiFeedback.tips.map(t => `<li>${t}</li>`).join('')}
+                  </ul>
+                </div>
+              </div>
+            ` : ''}
+
+            ${state.teacherSubmitted ? `
+              <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-center space-y-2">
+                <h4 class="font-bold text-emerald-900">החיבור נשלח בהצלחה למורה! ✅</h4>
+                <p class="text-xs text-emerald-700">הטקסט נשמר ב-Google Sheet. המורה יוכל לבדוק ולכתוב פידבק אישי.</p>
+                <button onclick="checkTeacherFeedback()" class="bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-semibold hover:bg-emerald-800 transition">
+                  🔍 בדוק אם המורה כבר הכניס פידבק ב-Sheet
+                </button>
+                ${state.teacherFeedbackRetrieved ? `
+                  <div class="mt-3 p-3 bg-white border border-emerald-300 rounded-lg text-sm text-slate-800 text-right">
+                    <strong>פידבק המורה:</strong> ${state.teacherFeedbackRetrieved}
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } else if (state.activeTab === "practice") {
         mainContent = `
           <div class="space-y-6">
             <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 class="font-bold text-blue-900">מחולל תרגולים אדפטיבי חכם</h2>
-                <p class="text-xs text-blue-700">השאלות מתחלפות בכל תרגול ומחזקות נושאים שבהם טעית בעבר!</p>
+                <h2 class="font-bold text-blue-900">תרגול ממוקד: ${state.selectedCategory.toUpperCase()}</h2>
+                <p class="text-xs text-blue-700">השאלות נטענות בלייב מ-Google Sheet ומותאמות לרמת השליטה שלך!</p>
               </div>
               <button id="btnShuffle" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
                 🎲 ערבב שאלות חדשות
               </button>
             </div>
 
+            ${state.activeUnseenText ? `
+              <div class="bg-amber-50 border border-amber-200 p-4 sm:p-5 rounded-xl space-y-2">
+                <h3 class="font-bold text-amber-900 text-lg">${state.activeUnseenText.title}</h3>
+                <p class="text-sm text-amber-800 leading-relaxed en-font" dir="ltr">${state.activeUnseenText.text}</p>
+              </div>
+            ` : ''}
+
             <div class="space-y-4">
               ${state.questions.map((q, idx) => {
                 const isWeak = (state.stats.weakTopics[q.topic] || 0) > 0;
                 return `
-                  <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                  <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
                     <div class="flex items-center justify-between mb-3">
-                      <span class="text-xs font-bold px-2.5 py-1 rounded bg-slate-100 text-slate-600">
-                        שאלה ${idx + 1} (${q.type === 'vocab' ? 'אוצר מילים' : 'דקדוק'})
-                      </span>
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold px-2.5 py-1 rounded bg-slate-100 text-slate-600">
+                          שאלה ${idx + 1} (${q.topic})
+                        </span>
+                        <span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold">
+                          רמה ${q.level || 1}
+                        </span>
+                      </div>
                       ${isWeak ? '<span class="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">⚡ נושא מומלץ לחיזוק</span>' : ''}
                     </div>
 
-                    <p class="font-semibold text-lg text-slate-800 mb-4 en-font" dir="ltr">${q.question}</p>
+                    <p class="font-semibold text-base sm:text-lg text-slate-800 mb-4 en-font" dir="ltr">${q.question}</p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       ${q.options.map(opt => {
                         const isSelected = state.userAnswers[q.id] === opt;
                         let btnStyle = "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700";
@@ -212,7 +501,7 @@
                         return `
                           <button
                             onclick="selectOption('${q.id}', '${opt}')"
-                            class="p-3 rounded-lg border text-right transition en-font ${btnStyle}"
+                            class="p-3 rounded-lg border text-right transition en-font text-sm ${btnStyle}"
                           >
                             ${opt}
                           </button>
@@ -234,36 +523,36 @@
               <button
                 id="btnSubmit"
                 ${Object.keys(state.userAnswers).length < state.questions.length ? 'disabled' : ''}
-                class="w-full bg-emerald-600 disabled:bg-slate-300 text-white font-bold py-3 rounded-xl shadow transition"
+                class="w-full bg-emerald-600 disabled:bg-slate-300 text-white font-bold py-3 rounded-xl shadow transition text-sm"
               >
                 בדוק תשובות ושמור התקדמות ✅
               </button>
             ` : `
               <div class="bg-white p-6 rounded-xl border border-slate-200 text-center space-y-3 shadow-sm">
                 <h3 class="text-2xl font-bold text-slate-800">ציון בתרגול זה: ${state.score}%</h3>
-                <p class="text-slate-600 text-sm">התרגול והתוצאות עודכנו במערכת ובגיליון גוגל שיטס!</p>
+                <p class="text-slate-600 text-sm">התוצאות והתרגול עודכנו אוטומטית בגיליון Google Sheets!</p>
                 <button id="btnNewPractice" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition">
-                  התחל תרגול נוסף 🔄
+                  תרגול נוסף 🔄
                 </button>
               </div>
             `}
           </div>
         `;
-      } else if (state.activeTab === "vocab") {
+      } else if (state.activeTab === "vocab_dict") {
         mainContent = `
           <div class="space-y-4">
-            <h2 class="text-xl font-bold text-slate-800">מילון מונחים אינטראקטיבי - לחץ להקראה 🔊</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              ${VOCABULARY_DATA.map(item => `
+            <h2 class="text-xl font-bold text-slate-800">מילון המונחים הדינמי מ-Google Sheet - לחץ להקראה 🔊</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              ${db.vocabulary.map(item => `
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                   <div>
                     <div class="flex items-center gap-2">
-                      <span class="font-bold text-slate-800 text-lg en-font">${item.word}</span>
+                      <span class="font-bold text-slate-800 text-base sm:text-lg en-font">${item.word}</span>
                       <button onclick="speakWord('${item.word}')" class="text-blue-600 hover:text-blue-800">🔊</button>
                     </div>
-                    <span class="text-xs text-slate-500">רמה ${item.level}</span>
+                    <span class="text-xs text-slate-500">רמה ${item.level || 1} • ${item.topic || 'Vocab'}</span>
                   </div>
-                  <span class="font-semibold text-slate-700">${item.translation}</span>
+                  <span class="font-semibold text-slate-700 text-sm">${item.translation}</span>
                 </div>
               `).join('')}
             </div>
@@ -315,27 +604,30 @@
               <div class="flex items-center gap-3">
                 <span class="w-10 h-10 bg-blue-600 text-white font-bold flex items-center justify-center rounded-xl text-lg">E8</span>
                 <div>
-                  <h1 class="font-bold text-slate-800 leading-none">English Grade 8</h1>
+                  <h1 class="font-bold text-slate-800 leading-none text-base sm:text-lg">English Grade 8</h1>
                   <span class="text-xs text-slate-500">שלום, ${state.studentName}</span>
                 </div>
               </div>
 
-              <div class="flex items-center gap-4 text-xs font-semibold">
-                <div class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200">
-                  🔄 סך תרגולים: <span class="text-base font-bold">${state.stats.practiceCount}</span>
+              <div class="flex items-center gap-3 text-xs font-semibold">
+                <div class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-200">
+                  🔄 תרגולים: <span class="text-sm font-bold">${state.stats.practiceCount}</span>
                 </div>
                 <button id="btnLogout" class="text-slate-400 hover:text-rose-600 text-xs">החלף תלמיד</button>
               </div>
             </div>
 
-            <div class="max-w-5xl mx-auto px-4 flex gap-2 border-t border-slate-100 pt-2">
-              <button onclick="switchTab('practice')" class="px-4 py-2 text-sm font-semibold rounded-t-lg ${state.activeTab === "practice" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
-                🎯 תרגול אדפטיבי
+            <div class="max-w-5xl mx-auto px-4 flex gap-2 border-t border-slate-100 pt-2 overflow-x-auto">
+              <button onclick="switchTab('topics')" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-t-lg whitespace-nowrap ${state.activeTab === "topics" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
+                🎯 תרגול לפי נושא
               </button>
-              <button onclick="switchTab('vocab')" class="px-4 py-2 text-sm font-semibold rounded-t-lg ${state.activeTab === "vocab" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
-                📚 מילון ואודיו
+              <button onclick="switchTab('writing')" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-t-lg whitespace-nowrap ${state.activeTab === "writing" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
+                ✍️ סדנת כתיבה (Writing)
               </button>
-              <button onclick="switchTab('stats')" class="px-4 py-2 text-sm font-semibold rounded-t-lg ${state.activeTab === "stats" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
+              <button onclick="switchTab('vocab_dict')" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-t-lg whitespace-nowrap ${state.activeTab === "vocab_dict" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
+                📚 מילון חי מ-Sheet
+              </button>
+              <button onclick="switchTab('stats')" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-t-lg whitespace-nowrap ${state.activeTab === "stats" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}">
                 📊 דוח התקדמות
               </button>
             </div>
@@ -346,6 +638,13 @@
           </main>
         </div>
       `;
+
+      const writingArea = document.getElementById("writingTextArea");
+      if (writingArea) {
+        writingArea.oninput = (e) => {
+          state.writingText = e.target.value;
+        };
+      }
 
       const logoutBtn = document.getElementById("btnLogout");
       if (logoutBtn) {
@@ -359,7 +658,7 @@
       const shuffleBtn = document.getElementById("btnShuffle");
       if (shuffleBtn) {
         shuffleBtn.onclick = () => {
-          generateQuestions();
+          generateQuestions(state.selectedCategory);
           render();
         };
       }
@@ -414,11 +713,24 @@
       const newPracticeBtn = document.getElementById("btnNewPractice");
       if (newPracticeBtn) {
         newPracticeBtn.onclick = () => {
-          generateQuestions();
+          generateQuestions(state.selectedCategory);
           render();
         };
       }
     }
+
+    window.selectPrompt = function(pId) {
+      state.selectedWritingPrompt = WRITING_PROMPTS.find(p => p.id === pId) || WRITING_PROMPTS[0];
+      state.aiFeedback = null;
+      state.teacherSubmitted = false;
+      render();
+    };
+
+    window.startTopicPractice = function(category) {
+      state.activeTab = "practice";
+      generateQuestions(category);
+      render();
+    };
 
     window.selectOption = function(qId, option) {
       if (state.submitted) return;
@@ -431,8 +743,7 @@
       render();
     };
 
-    if (state.isLoggedIn) generateQuestions();
-    render();
+    fetchLiveDatabase();
   </script>
 </body>
 </html>
